@@ -13,10 +13,15 @@ import org.bukkit.entity.LivingEntity;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 
 public class FMMModel extends MobModel {
+    private static final Map<UUID, Entity> boneMap = new ConcurrentHashMap<>();
+
     private final String modelId;
     private DynamicEntity modelEntity;
 
@@ -37,11 +42,31 @@ public class FMMModel extends MobModel {
         return fileModelConverter != null;
     }
 
+    public static UUID getParentUUID(UUID child) {
+        Entity parent = boneMap.get(child);
+        if (parent != null)
+            return parent.getUniqueId();
+        return null;
+    }
+
+    public static Entity getParent(UUID child) {
+        return boneMap.get(child);
+    }
+
+    private static void addBones(DynamicEntity dynamic) {
+        dynamic.getNametagArmorstands().forEach(
+                (armorStand) -> boneMap.put(
+                        armorStand.getUniqueId(),
+                        dynamic.getLivingEntity()
+                )
+        );
+    }
+
     public static DynamicEntity apply(@NonNull String modelId, @NonNull AbstractEntity abstractEntity) {
         DynamicEntity modelEntity = DynamicEntity.create(modelId, getLivingEntity(abstractEntity));
-        if (modelEntity == null) {
+        if (modelEntity == null)
             throw new IllegalArgumentException("Could not find model with id " + modelId);
-        }
+        addBones(modelEntity);
         return modelEntity;
     }
 
@@ -51,7 +76,11 @@ public class FMMModel extends MobModel {
         LivingEntity entity = getLivingEntity(abstractEntity);
         Bukkit.getScheduler().runTask(FMMAddon.getInstance(), () -> {
             DynamicEntity dynamic = DynamicEntity.create(modelId, entity);
-            consumer.accept(dynamic);
+            if (dynamic != null) {
+                addBones(dynamic);
+                if (consumer != null)
+                    consumer.accept(dynamic);
+            }
         });
     }
 

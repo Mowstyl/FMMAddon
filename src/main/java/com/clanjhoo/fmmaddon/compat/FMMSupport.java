@@ -7,6 +7,7 @@ import com.magmaguy.freeminecraftmodels.dataconverter.SkeletonBlueprint;
 import io.lumine.mythic.api.adapters.AbstractEntity;
 import io.lumine.mythic.api.config.MythicConfig;
 import io.lumine.mythic.api.mobs.MythicMob;
+import io.lumine.mythic.bukkit.BukkitAdapter;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.bukkit.compatibility.AbstractModelEngineSupport;
 import io.lumine.mythic.core.logging.MythicLogger;
@@ -35,25 +36,25 @@ public class FMMSupport extends AbstractModelEngineSupport {
 
     @Override
     public boolean isSubHitbox(UUID uuid) {
-        return false;
+        UUID parentUUID = FMMModel.getParentUUID(uuid);
+        return parentUUID != null && !parentUUID.equals(uuid);
     }
 
     @Override
     public boolean isBoundToSubHitbox(UUID uuid, UUID uuid1) {
-        return false;
+        UUID parentUUID = FMMModel.getParentUUID(uuid);
+        return parentUUID != null && parentUUID.equals(uuid1);
     }
 
     @Override
     public UUID getParentUUID(UUID uuid) {
-        return uuid;
+        return FMMModel.getParentUUID(uuid);
     }
 
     @Override
     public AbstractEntity getParent(AbstractEntity abstractEntity) {
-        //DynamicEntity dynamic = getDynamicEntity(abstractEntity);
-        //if (dynamic == null)
-        //    return null;
-        return abstractEntity;
+        Entity parent = FMMModel.getParent(abstractEntity.getUniqueId());
+        return parent == null ? abstractEntity : BukkitAdapter.adapt(parent);
     }
 
     @Override
